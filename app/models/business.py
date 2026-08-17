@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint, func
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -22,12 +22,30 @@ class ServiceArea(Base):
 
 
 class Service(Base):
+    """A housekeeping service offer.
+
+    Pricing is time-based and set per service. ``base_price`` and
+    ``duration_minutes`` describe the headline 2-hour offer (e.g. ₹199 / 2 hrs),
+    while the add-on rates let supervisors quote extensions on a call.
+    """
+
     __tablename__ = "services"
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(160), unique=True)
+    category: Mapped[str] = mapped_column(String(30), nullable=False, default="express")
     description: Mapped[str | None] = mapped_column(Text)
+    blurb: Mapped[str | None] = mapped_column(String(400), nullable=True)
     base_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    price_max: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+    includes: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    excludes: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # Per-service add-on / extension rates (e.g. basic: 30 min = ₹50, 1 hr = ₹80).
+    addon_price_30min: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    addon_price_60min: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    # Actual time may exceed the estimate by this grace period before add-on
+    # rates start applying to the overage.
+    overtime_grace_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=15)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

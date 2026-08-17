@@ -17,9 +17,17 @@ class ServiceAreaResponse(ServiceAreaInput):
 
 class ServiceInput(BaseModel):
     name: str = Field(min_length=2, max_length=160)
+    category: str = Field(default="express", min_length=2, max_length=30)
     description: str | None = Field(default=None, max_length=4000)
+    blurb: str | None = Field(default=None, max_length=400)
     base_price: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+    price_max: Decimal | None = Field(default=None, gt=0, max_digits=12, decimal_places=2)
     duration_minutes: int = Field(gt=0, le=1440)
+    includes: list[str] | None = Field(default=None)
+    excludes: list[str] | None = Field(default=None)
+    addon_price_30min: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
+    addon_price_60min: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
+    overtime_grace_minutes: int = Field(default=15, ge=0, le=120)
     is_active: bool = True
 
 

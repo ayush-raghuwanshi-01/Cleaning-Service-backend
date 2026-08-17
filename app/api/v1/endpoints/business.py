@@ -99,3 +99,39 @@ async def create_addon(service_id: UUID, payload: AddonInput, session: DbSession
     await session.commit()
     await session.refresh(addon)
     return addon
+
+
+@admin_router.get("/services", response_model=list[ServiceResponse])
+async def admin_list_services(session: DbSession, actor: Annotated[User, Depends(require_operations)]) -> list[Service]:
+    return list((await session.scalars(select(Service).order_by(Service.name))).all())
+
+
+@admin_router.patch("/services/{service_id}", response_model=ServiceResponse)
+async def update_service(service_id: UUID, payload: ServiceInput, session: DbSession, actor: Annotated[User, Depends(require_operations)]) -> Service:
+    service = await session.get(Service, service_id)
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+    for name, value in payload.model_dump().items():
+        setattr(service, name, value)
+    session.add(AuditLog(actor_id=actor.id, action="service_updated", entity_type="service", entity_id=str(service.id)))
+    await session.commit()
+    await session.refresh(service)
+    return service
+
+
+@admin_router.get("/service-areas", response_model=list[ServiceAreaResponse])
+async def admin_list_service_areas(session: DbSession, actor: Annotated[User, Depends(require_operations)]) -> list[ServiceArea]:
+    return list((await session.scalars(select(ServiceArea).order_by(ServiceArea.name))).all())
+
+
+@admin_router.patch("/service-areas/{area_id}", response_model=ServiceAreaResponse)
+async def update_service_area(area_id: UUID, payload: ServiceAreaInput, session: DbSession, actor: Annotated[User, Depends(require_operations)]) -> ServiceArea:
+    area = await session.get(ServiceArea, area_id)
+    if not area:
+        raise HTTPException(status_code=404, detail="Service area not found")
+    for name, value in payload.model_dump().items():
+        setattr(area, name, value)
+    session.add(AuditLog(actor_id=actor.id, action="service_area_updated", entity_type="service_area", entity_id=str(area.id)))
+    await session.commit()
+    await session.refresh(area)
+    return area
