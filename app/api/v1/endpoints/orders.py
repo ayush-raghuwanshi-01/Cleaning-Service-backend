@@ -363,14 +363,16 @@ async def list_order_payments(
 
 
 @admin_router.get("/stats", response_model=DayStatsResponse)
-async def day_stats(
-    session: DbSession,
-    actor: Annotated[User, Depends(require_operations)],
-    day: Annotated[date | None, Query()] = None,
-) -> DayStatsResponse:
+async def day_stats(session: DbSession, actor: Annotated[User, Depends(require_operations)], day: Annotated[date | None, Query()] = None) -> DayStatsResponse:
     target = day or date.today()
     orders = list(
-        (await session.scalars(select(Order).where(Order.scheduled_date == target))).all()
+        (
+            await session.scalars(
+                select(Order)
+                .where(Order.scheduled_date == target)
+                .options(selectinload(Order.payments))
+            )
+        ).all()
     )
     revenue = Decimal("0")
     revenue_upi = Decimal("0")
@@ -397,7 +399,6 @@ async def day_stats(
         revenue_cash=revenue_cash,
         by_source=by_source,
     )
-
 
 # --------------------------------------------------------------------------- #
 # WhatsApp config
