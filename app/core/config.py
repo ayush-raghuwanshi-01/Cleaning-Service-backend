@@ -5,7 +5,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
     environment: str = "development"
     database_url: str
     jwt_secret_key: str = Field(min_length=32)
@@ -18,6 +20,10 @@ class Settings(BaseSettings):
     bootstrap_owner_phone: str | None = None
     bootstrap_owner_email: str | None = None
     bootstrap_owner_password: str | None = None
+
+    # Rate limiting
+    rate_limit_auth: str = "10/minute"
+    rate_limit_general: str = "120/minute"
 
 
 @lru_cache
